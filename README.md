@@ -1,3 +1,25 @@
+## Using Hugging Face Transformers
+
+This dashboard can be extended to use Hugging Face's `transformers` library for model management and inference.
+
+### Install transformers
+Add to your environment:
+```powershell
+pip install transformers==4.41.1
+```
+
+### Example Usage
+You can use `transformers` in your Python code to load and run models:
+```python
+from transformers import pipeline
+
+# Load a text-generation pipeline
+generator = pipeline('text-generation', model='gpt2')
+result = generator('Hello, world!', max_length=50)
+print(result)
+```
+
+Integrate this logic in your API or services for custom model endpoints.
 # Model Dashboard
 
 A web-based dashboard for managing, running, and monitoring AI models via OpenAI API and custom endpoints.
