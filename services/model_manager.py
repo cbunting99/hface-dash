@@ -8,6 +8,7 @@ from huggingface_hub import snapshot_download, HfApi
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import psutil
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import requests
 
 class ModelManager:
     def __init__(self):
@@ -20,7 +21,8 @@ class ModelManager:
         self.download_progress: Dict[str, dict] = {}
         self.model_info_file = self.data_dir / "models.json"
         self.hf_api = HfApi()
-        
+        self.model_info = {}
+
     async def initialize(self):
         if self.model_info_file.exists():
             with open(self.model_info_file, 'r') as f:
@@ -36,7 +38,7 @@ class ModelManager:
         with open(self.model_info_file, 'w') as f:
             json.dump(self.model_info, f, indent=2)
     
-    async def download_model(self, model_name: str, hf_model_id: str) -> AsyncGenerator[dict, None]:
+    async def download_model(self, model_name: str, source: str, is_gguf: bool = False, hf_token: Optional[str] = None) -> AsyncGenerator[dict, None]:
         try:
             self.download_progress[model_name] = {
                 "status": "starting",
@@ -46,28 +48,52 @@ class ModelManager:
                 "current_file": "",
                 "error": None
             }
-            
+
             yield self.download_progress[model_name]
-            
+
             model_path = self.models_dir / model_name
-            
-            await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: snapshot_download(
-                    repo_id=hf_model_id,
-                    local_dir=str(model_path),
-                    local_dir_use_symlinks=False
+
+            if is_gguf:
+                # Download GGUF file from HuggingFace repo
+                model_path.mkdir(exist_ok=True)
+                files = self.hf_api.list_repo_files(repo_id=source)
+                gguf_files = [f for f in files if f.endswith(".gguf")]
+                if not gguf_files:
+                    raise Exception("No GGUF file found in HuggingFace repo")
+                gguf_file_name = gguf_files[0]
+                gguf_file_path = model_path / gguf_file_name
+                from huggingface_hub import hf_hub_download
+                local_path = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: hf_hub_download(repo_id=source, filename=gguf_file_name, local_dir=str(model_path), token=hf_token)
                 )
-            )
-            
-            self.model_info[model_name] = {
-                "hf_model_id": hf_model_id,
-                "path": str(model_path),
-                "downloaded_at": asyncio.get_event_loop().time(),
-                "loaded": False
-            }
+                self.model_info[model_name] = {
+                    "hf_model_id": source,
+                    "gguf_file": gguf_file_name,
+                    "path": local_path,
+                    "downloaded_at": asyncio.get_event_loop().time(),
+                    "loaded": False,
+                    "format": "gguf"
+                }
+            else:
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: snapshot_download(
+                        repo_id=source,
+                        local_dir=str(model_path),
+                        local_dir_use_symlinks=False,
+                        token=hf_token
+                    )
+                )
+                self.model_info[model_name] = {
+                    "hf_model_id": source,
+                    "path": str(model_path),
+                    "downloaded_at": asyncio.get_event_loop().time(),
+                    "loaded": False,
+                    "format": "huggingface"
+                }
             self.save_model_info()
-            
+
             self.download_progress[model_name] = {
                 "status": "completed",
                 "progress": 100,
@@ -76,9 +102,9 @@ class ModelManager:
                 "current_file": "",
                 "error": None
             }
-            
+
             yield self.download_progress[model_name]
-            
+
         except Exception as e:
             self.download_progress[model_name] = {
                 "status": "error",
