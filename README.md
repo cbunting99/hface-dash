@@ -172,7 +172,7 @@ curl -X POST http://localhost:8000/v1/completions \
 ### View Logs
 
 ```bash
-docker-compose logs -f vllm-dashboard
+docker-compose logs -f model-dashboard
 ```
 
 ### Restart Services

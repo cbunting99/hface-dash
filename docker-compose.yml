@@ -1,7 +1,7 @@
 version: '2.4'
 
 services:
-  vllm-dashboard:
+  model-dashboard:
     build: .
     ports:
       - "8000:8000"

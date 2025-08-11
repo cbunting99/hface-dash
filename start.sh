@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting VLLM Dashboard..."
+echo "🚀 Starting Model Dashboard..."
 
 # Check if Docker is available
 if ! command -v docker &> /dev/null; then
@@ -22,6 +22,6 @@ mkdir -p models data
 echo "📦 Building and starting containers..."
 docker-compose up --build
 
-echo "✅ VLLM Dashboard should be available at:"
+echo "✅ Model Dashboard should be available at:"
 echo "   🌐 Web Dashboard: http://localhost:8000"
 echo "   🤖 OpenAI API: http://localhost:8000/v1"

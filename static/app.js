@@ -1,4 +1,4 @@
-class VLLMDashboard {
+class ModelDashboard {
     constructor() {
         this.init();
         this.refreshData();
@@ -291,7 +291,7 @@ class VLLMDashboard {
     }
 }
 
-const dashboard = new VLLMDashboard();
+const dashboard = new ModelDashboard();
 
 function refreshData() {
     dashboard.refreshData();
