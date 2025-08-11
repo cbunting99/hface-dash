@@ -14,11 +14,15 @@ class DownloadRequest(BaseModel):
     model_name: str
     hf_model_id: str
 
+    model_config = {'protected_namespaces': ()}
+
 class GenerateRequest(BaseModel):
     model_name: str
     prompt: str
     max_tokens: int = 100
     temperature: float = 0.7
+
+    model_config = {'protected_namespaces': ()}
 
 @router.get("/models")
 async def get_models():
